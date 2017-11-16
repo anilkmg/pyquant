@@ -341,25 +341,29 @@ class Worker(Process):
                 else:
                     if peptide:
                         for label_mass, label_masses in silac_masses.items():
-                            added_residues = added_residues.union(label_masses)
-                            labels = [label_mass for mod_aa in peptide if mod_aa in label_masses]
+                            added_residues = added_residues.union(label_masses);
+#                            labels = [label_mass for mod_aa in peptide if mod_aa in label_masses]
+# Replaced above line to look for terminal amino acid modifications status mass difference
+                            labels = 0
+                            for mod_aa in peptide:
+                                if mod_aa in label_masses:
+                                    labels += label_mass;
+                            for l_masses in label_masses:
+                                if len(l_masses) > 1 and re.search(l_masses, peptide):
+                                    labels += label_mass;
                             if 'X' in label_masses:
                                 global_mass = label_mass
                             if ']' in label_masses:
                                 cterm_mass = label_mass
                             if '[' in label_masses:
                                 nterm_mass = label_mass
-                            for l_masses in label_masses:
-                                if re.search(l_masses, peptide):
-                                    cterm_mass += label_mass
-                            silac_shift += sum(labels)
+                            silac_shift += labels;
                     else:
                         # no mass, just assume we have one of the labels
                         silac_shift += mass_keys[0]
                     if global_mass is not None:
                         silac_shift += sum([global_mass for mod_aa in peptide if mod_aa not in added_residues])
                     silac_shift += cterm_mass + nterm_mass
-#                    sys.stdout.write("%s:\t %f+%f = %f\n" % (silac_label, precursor, silac_shift, precursor + silac_shift))
                     label_mz = precursor + (silac_shift / float(charge))
                     theo_mz = theor_mass + (silac_shift / float(charge))
                 precursors[silac_label]['uncalibrated_mz'] = label_mz
